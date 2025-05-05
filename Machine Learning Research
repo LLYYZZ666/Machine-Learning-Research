@@ -1,0 +1,838 @@
+import numpy as np
+if not hasattr(np, 'object'):
+    np.object = object
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn import linear_model
+from sklearn.svm import SVC
+from sklearn.neural_network import MLPClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import AdaBoostClassifier
+from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.naive_bayes import GaussianNB
+from sklearn.ensemble import VotingClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import roc_curve, auc
+from sklearn.inspection import permutation_importance
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import RidgeClassifier, Ridge
+from pdpbox import info_plots
+from pdpbox import pdp
+from sklearn.inspection import permutation_importance
+from sklearn.metrics import roc_auc_score, accuracy_score, recall_score, confusion_matrix, precision_score, f1_score
+from scipy.stats import pearsonr
+import statsmodels.api as sm
+import matplotlib.pyplot as plt
+from sklearn.linear_model import LassoCV
+from sklearn.linear_model import LassoCV, lasso_path
+from statsmodels.stats.outliers_influence import variance_inflation_factor
+from sklearn.linear_model import LogisticRegression
+#
+import numpy as np
+import pandas as pd
+import eli5
+import pdpbox
+import matplotlib.pyplot as plt
+import warnings
+import shap
+import seaborn as sns
+from sklearn.metrics import confusion_matrix
+from scipy.stats import pearsonr
+warnings.filterwarnings("ignore")
+
+df = pd.read_csv('D:/PythonProject/data/data1.csv')
+np.random.seed(42)
+
+
+X = df[['sex', 'grade', 'age',  'address',
+        'AB', 'SM', 'PR', 'HI', 'AA', 'DD',
+        'child', 'FE', 'ME', 'FJ', 'MJ', 'FEL', 'IRQ', 'FEP',
+        'diet', 'sleep', 'smoking', 'drinking', 'PA', 'ST']]
+y = df['QoL']
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# RF 随机森林模型
+RF = RandomForestClassifier(max_depth=13, n_estimators=142, min_samples_leaf=2)
+result = RF.fit(X_train, y_train)
+print(result.score(X_train, y_train))
+print(result.score(X_test, y_test))
+
+# RR “Ridge Regression”
+reg = linear_model.RidgeClassifier(alpha=.5, fit_intercept =True, tol=1e-4)
+result_Ridge = reg.fit(X_train, y_train)
+print(result_Ridge.score(X_train, y_train))
+print(result_Ridge.score(X_test, y_test))
+
+# SVM
+svm = SVC(C=1, kernel='poly', degree = 2)
+result_svm = svm.fit(X_train, y_train)
+print(result_svm.score(X_train, y_train))
+print(result_svm.score(X_test, y_test))
+
+# MLP
+mlp = MLPClassifier(solver='lbfgs', activation='relu', learning_rate_init =0.001, alpha=1e-5,
+                    hidden_layer_sizes=(10,46), random_state=9)
+result_mlp = mlp.fit(X_train, y_train)
+print(result_mlp.score(X_train, y_train))
+print(result_mlp.score(X_test, y_test))
+
+# DT
+clf = DecisionTreeClassifier(criterion="gini", max_depth=15, )
+result_clf = clf.fit(X_train, y_train)
+print(result_clf.score(X_train, y_train))
+print(result_clf.score(X_test, y_test))
+
+# Adaboost
+ada = AdaBoostClassifier(n_estimators=61, learning_rate=1, algorithm='SAMME.R')
+ada_result = ada.fit(X_train, y_train)
+print(ada_result.score(X_train, y_train))
+print(ada_result.score(X_test, y_test))
+
+# Gradient Tree Boost
+GBDT = GradientBoostingClassifier(n_estimators=51, learning_rate=0.31, max_depth=1, criterion='friedman_mse')
+GBDT_result = GBDT.fit(X_train, y_train)
+print(GBDT_result.score(X_train, y_train))
+print(GBDT_result.score(X_test, y_test))
+
+# Voting Classifier
+clf1 = LogisticRegression()
+clf2 = DecisionTreeClassifier(criterion="gini", max_depth=5)
+clf3 = GaussianNB()
+vot = VotingClassifier(estimators=[('lr', clf1), ('dt', clf2), ('gnb', clf3)], voting='soft', flatten_transform=True)
+vot_result = vot.fit(X_train, y_train)
+print(vot_result.score(X_train, y_train))
+print(vot_result.score(X_test, y_test))
+
+# K-Nearest Neighbors
+neigh = KNeighborsClassifier(n_neighbors=16, algorithm='auto', metric='minkowski', leaf_size=30, weights='uniform')
+neigh_result = neigh.fit(X_train, y_train)
+print(neigh_result.score(X_train, y_train))
+print(neigh_result.score(X_test, y_test))
+
+##逻辑回归
+logi = LogisticRegression(solver='lbfgs', max_iter=1000)
+logi_result = logi.fit(X_train, y_train)
+print(logi_result.score(X_train, y_train))
+print(logi_result.score(X_test, y_test))
+
+#CM
+y_test_pred_RF = RF.predict(X_test)
+y_test_pred_proba_RF = RF.predict_proba(X_test)[:,1]
+y_train_pred_RF = RF.predict(X_train)
+y_train_pred_proba_RF = RF.predict_proba(X_train)[:,1]
+y_test_pred_reg = reg.predict(X_test)
+y_test_pred_proba_reg = reg.decision_function(X_test)
+y_train_pred_reg = reg.predict(X_train)
+y_train_pred_proba_reg = reg.decision_function(X_train)
+y_test_pred_svm = svm.predict(X_test)
+y_test_pred_proba_svm = svm.decision_function(X_test)
+y_train_pred_svm = svm.predict(X_train)
+y_train_pred_proba_svm = svm.decision_function(X_train)
+y_test_pred_mlp = mlp.predict(X_test)
+y_test_pred_proba_mlp = mlp.predict_proba(X_test)[:,1]
+y_train_pred_mlp = mlp.predict(X_train)
+y_train_pred_proba_mlp = mlp.predict_proba(X_train)[:,1]
+y_test_pred_clf = clf.predict(X_test)
+y_test_pred_proba_clf = clf.predict_proba(X_test)[:,1]
+y_train_pred_clf = clf.predict(X_train)
+y_train_pred_proba_clf = clf.predict_proba(X_train)[:,1]
+y_test_pred_ada = ada.predict(X_test)
+y_test_pred_proba_ada = ada.predict_proba(X_test)[:,1]
+y_train_pred_ada = ada.predict(X_train)
+y_train_pred_proba_ada = ada.predict_proba(X_train)[:,1]
+y_test_pred_GBDT = GBDT.predict(X_test)
+y_test_pred_proba_GBDT = GBDT.predict_proba(X_test)[:,1]
+y_train_pred_GBDT = GBDT.predict(X_train)
+y_train_pred_proba_GBDT = GBDT.predict_proba(X_train)[:,1]
+y_test_pred_vot = vot.predict(X_test)
+y_test_pred_proba_vot = vot.predict_proba(X_test)[:,1]
+y_train_pred_vot = vot.predict(X_train)
+y_train_pred_proba_vot = vot.predict_proba(X_train)[:,1]
+y_test_pred_neigh = neigh.predict(X_test)
+y_test_pred_proba_neigh = neigh.predict_proba(X_test)[:,1]
+y_train_pred_neigh = neigh.predict(X_train)
+y_train_pred_proba_neigh = neigh.predict_proba(X_train)[:,1]
+y_train_pred_proba_logi = logi.predict_proba(X_train)[:,1]
+y_test_pred_proba_logi = logi.predict_proba(X_test)[:,1]
+RF_confusion_matrix_model = confusion_matrix(y_test, y_test_pred_RF)
+reg_confusion_matrix_model = confusion_matrix(y_test, y_test_pred_reg)
+svm_confusion_matrix_model = confusion_matrix(y_test, y_test_pred_svm)
+mlp_confusion_matrix_model = confusion_matrix(y_test, y_test_pred_mlp)
+clf_confusion_matrix_model = confusion_matrix(y_test, y_test_pred_clf)
+ada_confusion_matrix_model = confusion_matrix(y_test, y_test_pred_ada)
+GBDT_confusion_matrix_model = confusion_matrix(y_test, y_test_pred_GBDT)
+vot_confusion_matrix_model = confusion_matrix(y_test, y_test_pred_vot)
+neigh_confusion_matrix_model = confusion_matrix(y_test, y_test_pred_neigh)
+
+# POC
+RF_fpr, RF_tpr, RF_thresholds = roc_curve(y_test, y_test_pred_proba_RF)
+RFt_fpr, RFt_tpr, RFt_thresholds = roc_curve(y_train, y_train_pred_proba_RF)
+reg_fpr, reg_tpr, reg_thresholds = roc_curve(y_test, y_test_pred_proba_reg)
+regt_fpr, regt_tpr, regt_thresholds = roc_curve(y_train, y_train_pred_proba_reg)
+svm_fpr, svm_tpr, svm_thresholds = roc_curve(y_test, y_test_pred_proba_svm)
+svmt_fpr, svmt_tpr, svmt_thresholds = roc_curve(y_train, y_train_pred_proba_svm)
+mlp_fpr, mlp_tpr, mlp_thresholds = roc_curve(y_test, y_test_pred_proba_mlp)
+mlpt_fpr, mlpt_tpr, mlpt_thresholds = roc_curve(y_train, y_train_pred_proba_mlp)
+clf_fpr, clf_tpr, clf_thresholds = roc_curve(y_test, y_test_pred_proba_clf)
+clft_fpr, clft_tpr, clft_thresholds = roc_curve(y_train, y_train_pred_proba_clf)
+ada_fpr, ada_tpr, ada_thresholds = roc_curve(y_test, y_test_pred_proba_ada)
+adat_fpr, adat_tpr, adat_thresholds = roc_curve(y_train, y_train_pred_proba_ada)
+GBDT_fpr, GBDT_tpr, GBDT_thresholds = roc_curve(y_test, y_test_pred_proba_GBDT)
+GBDTt_fpr, GBDTt_tpr, GBDTt_thresholds = roc_curve(y_train, y_train_pred_proba_GBDT)
+vot_fpr, vot_tpr, vot_thresholds = roc_curve(y_test, y_test_pred_proba_vot)
+vott_fpr, vott_tpr, vott_thresholds = roc_curve(y_train, y_train_pred_proba_vot)
+neigh_fpr, neigh_tpr, neigh_thresholds = roc_curve(y_test, y_test_pred_proba_neigh)
+neight_fpr, neight_tpr, neight_thresholds = roc_curve(y_train, y_train_pred_proba_neigh)
+logi_fpr, logi_tpr, logi_thresholds = roc_curve(y_test, y_test_pred_proba_logi)
+logit_fpr, logit_tpr, logit_thresholds = roc_curve(y_train, y_train_pred_proba_logi)
+
+###绘制ROC曲线
+plt.rcParams['font.family'] = 'Arial'
+plt.rcParams['font.sans-serif'] = ['Arial']
+
+# AUC 随机森林
+RF_auc = auc(RF_fpr, RF_tpr)
+RFt_auc = auc(RFt_fpr, RFt_tpr)
+testing_color  = '#d4af37'
+training_color = '#5b7436'
+plt.plot(RF_fpr,  RF_tpr,  c=testing_color,  label=f'Testing   AUC = {RF_auc:.2f}')
+plt.plot(RFt_fpr, RFt_tpr, c=training_color, label=f'Training  AUC = {RFt_auc:.2f}')
+plt.plot([0,1], [0,1], ls="--", c=".3")
+plt.xlim(0,1)
+plt.ylim(0,1)
+plt.title('Random Forest')
+plt.xlabel('False Positive Rate (1 - Specificity)')
+plt.ylabel('True Positive Rate (Sensitivity)')
+plt.grid(True)
+plt.text(0.60, 0.15,
+         f'Testing   AUC = {RF_auc:.2f}',
+         color='black',
+         bbox={
+             'facecolor': testing_color,  # 背景色
+             'edgecolor': 'none',         # 去掉边框线
+             'alpha': 0.4,                # 半透明
+             'pad': 5                     # 内边距，数字大一些背景框更“饱满”
+         })
+
+plt.text(0.60, 0.08,
+         f'Training  AUC = {RFt_auc:.2f}',
+         color='black',
+         bbox={
+             'facecolor': training_color,
+             'edgecolor': 'none',
+             'alpha': 0.4,
+             'pad': 5
+         })
+
+plt.savefig(r'C:\Users\22363\Desktop\PythonFigure\Randomforest_ROC.png',
+            dpi=300, bbox_inches='tight')
+plt.show()
+
+# AUC 岭模型 Ridge Regression
+reg_auc  = auc(reg_fpr,  reg_tpr)
+regt_auc = auc(regt_fpr, regt_tpr)
+testing_color  = '#d4af37'
+training_color = '#5b7436'
+plt.plot(reg_fpr,  reg_tpr,  c=testing_color,  label=f'Testing   AUC = {reg_auc:.2f}')
+plt.plot(regt_fpr, regt_tpr, c=training_color, label=f'Training  AUC = {regt_auc:.2f}')
+plt.plot([0,1], [0,1], ls="--", c=".3")
+plt.xlim(0,1)
+plt.ylim(0,1)
+plt.title('Ridge Regression')
+plt.xlabel('False Positive Rate (1 - Specificity)')
+plt.ylabel('True Positive Rate (Sensitivity)')
+plt.grid(True)
+plt.text(0.60, 0.15,
+         f'Testing   AUC = {reg_auc:.2f}',
+         color='black',
+         bbox={
+             'facecolor': testing_color,
+             'edgecolor': 'none',
+             'alpha': 0.4,
+             'pad': 5
+         })
+plt.text(0.60, 0.08,
+         f'Training  AUC = {regt_auc:.2f}',
+         color='black',
+         bbox={
+             'facecolor': training_color,
+             'edgecolor': 'none',
+             'alpha': 0.4,
+             'pad': 5
+         })
+plt.savefig(r'C:\Users\22363\Desktop\PythonFigure\Ridgeregression_ROC.png',
+            dpi=300, bbox_inches='tight')
+plt.show()
+
+# AUC 支持向量机 Support Vector Machine
+svm_auc  = auc(svm_fpr,  svm_tpr)
+svmt_auc = auc(svmt_fpr, svmt_tpr)
+testing_color  = '#d4af37'
+training_color = '#5b7436'
+plt.plot(svm_fpr,  svm_tpr,  c=testing_color,  label=f'Testing   AUC = {svm_auc:.2f}')
+plt.plot(svmt_fpr, svmt_tpr, c=training_color, label=f'Training  AUC = {svmt_auc:.2f}')
+plt.plot([0,1],     [0,1],     ls="--",       c=".3")
+plt.xlim(0,1)
+plt.ylim(0,1)
+plt.title('Support Vector Machine')
+plt.xlabel('False Positive Rate (1 - Specificity)')
+plt.ylabel('True Positive Rate (Sensitivity)')
+plt.grid(True)
+plt.text(0.60, 0.15,
+         f'Testing   AUC = {svm_auc:.2f}',
+         color='black',
+         bbox={
+             'facecolor': testing_color,
+             'edgecolor': 'none',
+             'alpha': 0.4,
+             'pad': 5
+         })
+plt.text(0.60, 0.08,
+         f'Training  AUC = {svmt_auc:.2f}',
+         color='black',
+         bbox={
+             'facecolor': training_color,
+             'edgecolor': 'none',
+             'alpha': 0.4,
+             'pad': 5
+         })
+plt.savefig(r'C:\Users\22363\Desktop\PythonFigure\Supportvector_ROC.png',
+            dpi=300, bbox_inches='tight')
+plt.show()
+
+# AUC MLP 模型 Multilayer Perceptron
+mlp_auc  = auc(mlp_fpr,  mlp_tpr)
+mlpt_auc = auc(mlpt_fpr, mlpt_tpr)
+testing_color  = '#d4af37'
+training_color = '#5b7436'
+plt.plot(mlp_fpr,  mlp_tpr,  c=testing_color,  label=f'Testing   AUC = {mlp_auc:.2f}')
+plt.plot(mlpt_fpr, mlpt_tpr, c=training_color, label=f'Training  AUC = {mlpt_auc:.2f}')
+plt.plot([0,1],     [0,1],     ls="--",       c=".3")
+plt.xlim(0,1)
+plt.ylim(0,1)
+plt.title('Multilayer Perceptron')
+plt.xlabel('False Positive Rate (1 - Specificity)')
+plt.ylabel('True Positive Rate (Sensitivity)')
+plt.grid(True)
+plt.text(0.60, 0.15,
+         f'Testing   AUC = {mlp_auc:.2f}',
+         color='black',
+         bbox={
+             'facecolor': testing_color,
+             'edgecolor': 'none',
+             'alpha': 0.4,
+             'pad': 5
+         })
+plt.text(0.60, 0.08,
+         f'Training  AUC = {mlpt_auc:.2f}',
+         color='black',
+         bbox={
+             'facecolor': training_color,
+             'edgecolor': 'none',
+             'alpha': 0.4,
+             'pad': 5
+         })
+plt.savefig(r'C:\Users\22363\Desktop\PythonFigure\Multilayerperceptron_ROC.png',
+            dpi=300, bbox_inches='tight')
+plt.show()
+
+# AUC clf 模型 Decision Tree
+clf_auc  = auc(clf_fpr,  clf_tpr)
+clft_auc = auc(clft_fpr, clft_tpr)
+testing_color  = '#d4af37'
+training_color = '#5b7436'
+plt.plot(clf_fpr,  clf_tpr,  c=testing_color,  label=f'Testing   AUC = {clf_auc:.2f}')
+plt.plot(clft_fpr, clft_tpr, c=training_color, label=f'Training  AUC = {clft_auc:.2f}')
+plt.plot([0,1],     [0,1],     ls="--",       c=".3")
+plt.xlim(0,1)
+plt.ylim(0,1)
+plt.title('Decision Tree')
+plt.xlabel('False Positive Rate (1 - Specificity)')
+plt.ylabel('True Positive Rate (Sensitivity)')
+plt.grid(True)
+plt.text(0.60, 0.15,
+         f'Testing   AUC = {clf_auc:.2f}',
+         color='black',
+         bbox={
+             'facecolor': testing_color,
+             'edgecolor': 'none',
+             'alpha': 0.4,
+             'pad': 5
+         })
+plt.text(0.60, 0.08,
+         f'Training  AUC = {clft_auc:.2f}',
+         color='black',
+         bbox={
+             'facecolor': training_color,
+             'edgecolor': 'none',
+             'alpha': 0.4,
+             'pad': 5
+         })
+plt.savefig(r'C:\Users\22363\Desktop\PythonFigure\DecisionTree_ROC.png',
+            dpi=300, bbox_inches='tight')
+plt.show()
+
+# AUC AdaBoost
+ada_auc  = auc(ada_fpr,  ada_tpr)
+adat_auc = auc(adat_fpr, adat_tpr)
+testing_color  = '#d4af37'
+training_color = '#5b7436'
+plt.plot(ada_fpr,  ada_tpr,  c=testing_color,  label=f'Testing   AUC = {ada_auc:.2f}')
+plt.plot(adat_fpr, adat_tpr, c=training_color, label=f'Training  AUC = {adat_auc:.2f}')
+plt.plot([0,1],     [0,1],     ls="--",       c=".3")
+plt.xlim(0,1)
+plt.ylim(0,1)
+plt.title('AdaBoost')
+plt.xlabel('False Positive Rate (1 - Specificity)')
+plt.ylabel('True Positive Rate (Sensitivity)')
+plt.grid(True)
+plt.text(0.60, 0.15,
+         f'Testing   AUC = {ada_auc:.2f}',
+         color='black',
+         bbox={
+             'facecolor': testing_color,
+             'edgecolor': 'none',
+             'alpha': 0.4,
+             'pad': 5
+         })
+plt.text(0.60, 0.08,
+         f'Training  AUC = {adat_auc:.2f}',
+         color='black',
+         bbox={
+             'facecolor': training_color,
+             'edgecolor': 'none',
+             'alpha': 0.4,
+             'pad': 5
+         })
+plt.savefig(r'C:\Users\22363\Desktop\PythonFigure\AdaBoost_ROC.png',
+            dpi=300, bbox_inches='tight')
+plt.show()
+
+# AUC Gradient Boosting Decision Tree
+GBDT_auc  = auc(GBDT_fpr,  GBDT_tpr)
+GBDTt_auc = auc(GBDTt_fpr, GBDTt_tpr)
+testing_color  = '#d4af37'
+training_color = '#5b7436'
+plt.plot(GBDT_fpr,   GBDT_tpr,   c=testing_color,  label=f'Testing   AUC = {GBDT_auc:.2f}')
+plt.plot(GBDTt_fpr,  GBDTt_tpr,  c=training_color, label=f'Training  AUC = {GBDTt_auc:.2f}')
+plt.plot([0,1],      [0,1],      ls="--",           c=".3")
+plt.xlim(0,1)
+plt.ylim(0,1)
+plt.title('Gradient Boosting Decision Tree')
+plt.xlabel('False Positive Rate (1 - Specificity)')
+plt.ylabel('True Positive Rate (Sensitivity)')
+plt.grid(True)
+plt.text(0.60, 0.15,
+         f'Testing   AUC = {GBDT_auc:.2f}',
+         color='black',
+         bbox={
+             'facecolor': testing_color,
+             'edgecolor': 'none',
+             'alpha': 0.4,
+             'pad': 5
+         })
+plt.text(0.60, 0.08,
+         f'Training  AUC = {GBDTt_auc:.2f}',
+         color='black',
+         bbox={
+             'facecolor': training_color,
+             'edgecolor': 'none',
+             'alpha': 0.4,
+             'pad': 5
+         })
+plt.savefig(r'C:\Users\22363\Desktop\PythonFigure\GradientBoosting_ROC.png',
+            dpi=300, bbox_inches='tight')
+plt.show()
+
+# AUC Voting Classifier
+vot_auc  = auc(vot_fpr,  vot_tpr)
+vott_auc = auc(vott_fpr, vott_tpr)
+testing_color  = '#d4af37'
+training_color = '#5b7436'
+plt.plot(vot_fpr,  vot_tpr,  c=testing_color,  label=f'Testing   AUC = {vot_auc:.2f}')
+plt.plot(vott_fpr, vott_tpr, c=training_color, label=f'Training  AUC = {vott_auc:.2f}')
+plt.plot([0,1],     [0,1],     ls="--",       c=".3")
+plt.xlim(0,1)
+plt.ylim(0,1)
+plt.title('Voting Classifier')
+plt.xlabel('False Positive Rate (1 - Specificity)')
+plt.ylabel('True Positive Rate (Sensitivity)')
+plt.grid(True)
+plt.text(0.60, 0.15,
+         f'Testing   AUC = {vot_auc:.2f}',
+         color='black',
+         bbox={
+             'facecolor': testing_color,
+             'edgecolor': 'none',
+             'alpha': 0.4,
+             'pad': 5
+         })
+plt.text(0.60, 0.08,
+         f'Training  AUC = {vott_auc:.2f}',
+         color='black',
+         bbox={
+             'facecolor': training_color,
+             'edgecolor': 'none',
+             'alpha': 0.4,
+             'pad': 5
+         })
+plt.savefig(r'C:\Users\22363\Desktop\PythonFigure\VotingClassifier_ROC.png',
+            dpi=300, bbox_inches='tight')
+plt.show()
+
+# AUC K-Nearest Neighbor
+neigh_auc   = auc(neigh_fpr,   neigh_tpr)
+neight_auc  = auc(neight_fpr, neight_tpr)
+testing_color  = '#d4af37'
+training_color = '#5b7436'
+plt.plot(neigh_fpr,   neigh_tpr,   c=testing_color,  label=f'Testing   AUC = {neigh_auc:.2f}')
+plt.plot(neight_fpr,  neight_tpr,  c=training_color, label=f'Training  AUC = {neight_auc:.2f}')
+plt.plot([0,1],       [0,1],       ls="--",           c=".3")
+plt.xlim(0,1)
+plt.ylim(0,1)
+plt.title('K-Nearest Neighbor')
+plt.xlabel('False Positive Rate (1 - Specificity)')
+plt.ylabel('True Positive Rate (Sensitivity)')
+plt.grid(True)
+plt.text(0.60, 0.15,
+         f'Testing   AUC = {neigh_auc:.2f}',
+         color='black',
+         bbox={
+             'facecolor': testing_color,
+             'edgecolor': 'none',
+             'alpha': 0.4,
+             'pad': 5
+         })
+plt.text(0.60, 0.08,
+         f'Training  AUC = {neight_auc:.2f}',
+         color='black',
+         bbox={
+             'facecolor': training_color,
+             'edgecolor': 'none',
+             'alpha': 0.4,
+             'pad': 5
+         })
+plt.savefig(r'C:\Users\22363\Desktop\PythonFigure\K_Nearest_ROC.png',
+            dpi=300, bbox_inches='tight')
+plt.show()
+
+# AUC Logistic Regression
+logi_auc   = auc(logi_fpr,   logi_tpr)
+logit_auc  = auc(logit_fpr,  logit_tpr)
+testing_color  = '#d4af37'
+training_color = '#5b7436'
+plt.plot(logi_fpr,   logi_tpr,   c=testing_color,  label=f'Testing   AUC = {logi_auc:.2f}')
+plt.plot(logit_fpr,  logit_tpr,  c=training_color, label=f'Training  AUC = {logit_auc:.2f}')
+plt.plot([0,1],      [0,1],      ls='--',          c='.3')
+plt.xlim(0,1)
+plt.ylim(0,1)
+plt.title('Logistic Regression')
+plt.xlabel('False Positive Rate (1 - Specificity)')
+plt.ylabel('True Positive Rate (Sensitivity)')
+plt.grid(True)
+plt.text(0.60, 0.15,
+         f'Testing   AUC = {logi_auc:.2f}',
+         color='black',
+         bbox={
+             'facecolor': testing_color,
+             'edgecolor': 'none',
+             'alpha': 0.4,
+             'pad': 5
+         })
+plt.text(0.60, 0.08,
+         f'Training  AUC = {logit_auc:.2f}',
+         color='black',
+         bbox={
+             'facecolor': training_color,
+             'edgecolor': 'none',
+             'alpha': 0.4,
+             'pad': 5
+         })
+plt.savefig(r'C:\Users\22363\Desktop\PythonFigure\LogisticRegression_ROC.png',
+            dpi=300, bbox_inches='tight')
+plt.show()
+
+def compute_metrics(y_true, y_pred, y_prob):
+    """
+    计算评价指标：
+      AUC, Accuracy, Sensitivity/Recall, Specificity, FPR, FNR, PPV, NPV, F1 score
+    参数:
+      y_true: 真实标签
+      y_pred: 模型预测的类别标签
+      y_prob: 模型预测的正类概率或决策函数值（用于计算AUC）
+    返回:
+      包含各项指标的字典
+    """
+    # AUC
+    auc_value = roc_auc_score(y_true, y_prob)
+    # Accuracy
+    accuracy = accuracy_score(y_true, y_pred)
+
+    tn, fp, fn, tp = confusion_matrix(y_true, y_pred).ravel()
+
+    # Sensitivity/Recall: TP / (TP + FN)
+    sensitivity = tp / (tp + fn) if (tp + fn) != 0 else 0
+    # Specificity: TN / (TN + FP)
+    specificity = tn / (tn + fp) if (tn + fp) != 0 else 0
+    # FPR: FP / (FP + TN)
+    fpr = fp / (fp + tn) if (fp + tn) != 0 else 0
+    # FNR: FN / (FN + TP)
+    fnr = fn / (fn + tp) if (fn + tp) != 0 else 0
+    # PPV (Positive Predictive Value): TP / (TP + FP)
+    ppv = tp / (tp + fp) if (tp + fp) != 0 else 0
+    # NPV (Negative Predictive Value): TN / (TN + FN)
+    npv = tn / (tn + fn) if (tn + fn) != 0 else 0
+    # F1 score
+    f1 = f1_score(y_true, y_pred)
+
+    return {
+        'AUC': auc_value,
+        'Accuracy': accuracy,
+        'Sensitivity/Recall': sensitivity,
+        'Specificity': specificity,
+        'FPR': fpr,
+        'FNR': fnr,
+        'PPV': ppv,
+        'NPV': npv,
+        'F1 score': f1
+    }
+
+
+# 针对各模型（使用测试集的结果）计算评价指标
+metrics_RF = compute_metrics(y_test, y_test_pred_RF, y_test_pred_proba_RF)
+metrics_reg = compute_metrics(y_test, y_test_pred_reg, y_test_pred_proba_reg)
+metrics_svm = compute_metrics(y_test, y_test_pred_svm, y_test_pred_proba_svm)
+metrics_mlp = compute_metrics(y_test, y_test_pred_mlp, y_test_pred_proba_mlp)
+metrics_clf = compute_metrics(y_test, y_test_pred_clf, y_test_pred_proba_clf)
+metrics_ada = compute_metrics(y_test, y_test_pred_ada, y_test_pred_proba_ada)
+metrics_GBDT = compute_metrics(y_test, y_test_pred_GBDT, y_test_pred_proba_GBDT)
+metrics_vot = compute_metrics(y_test, y_test_pred_vot, y_test_pred_proba_vot)
+metrics_neigh = compute_metrics(y_test, y_test_pred_neigh, y_test_pred_proba_neigh)
+metrics_logi = compute_metrics(y_test, logi.predict(X_test), y_test_pred_proba_logi)
+
+results_df = pd.DataFrame({
+    'Random Forest': metrics_RF,
+    'Ridge Regression': metrics_reg,
+    'SVM': metrics_svm,
+    'MLP': metrics_mlp,
+    'Decision Tree': metrics_clf,
+    'AdaBoost': metrics_ada,
+    'GBDT': metrics_GBDT,
+    'Voting Classifier': metrics_vot,
+    'KNN': metrics_neigh,
+    'Logistic Regression': metrics_logi
+}).T
+print(results_df.to_string())
+
+perm_result = permutation_importance(
+    estimator=RF,
+    X=X_test,
+    y=y_test,
+    n_repeats=50,
+    random_state=42,
+    n_jobs=-1
+)
+importances_mean = perm_result.importances_mean
+importances_std  = perm_result.importances_std
+top_n   = 10
+# 按重要性从大到小排序，并可选择取前 N 个特征
+indices = np.argsort(importances_mean)[::-1]
+top_n = len(importances_mean)  # 只展示前 9 个特征，可自行修改
+top_indices = indices[:top_n]
+plt.figure(figsize=(8, 6))
+plt.title("Permutation Feature Importance (RF)")
+plt.errorbar(
+    x=range(top_n),
+    y=importances_mean[top_indices],
+    yerr=importances_std[top_indices],
+    fmt='o',          # 'o' 表示圆点
+    color='red',      # 圆点颜色
+    ecolor='blue',    # 误差棒颜色
+    capsize=4         # 误差棒端点横线长度
+)
+
+# 设置横轴刻度为特征名称，并旋转避免重叠
+feature_names = X.columns.to_list()
+plt.xticks(
+    ticks=range(top_n),
+    labels=[feature_names[i] for i in top_indices],
+    rotation=45,
+    ha='right'
+)
+
+plt.ylabel("Feature importance")
+plt.ylim(-0.01, 0.080)    # 让 y 轴从 0 开始
+plt.tight_layout()    # 自动紧凑排版，防止标签被截断
+plt.savefig(r'C:\Users\22363\Desktop\PythonFigure\tezhengzhi.png',
+            dpi=300, bbox_inches='tight')
+plt.show()
+
+feature_importances = pd.DataFrame({
+    'feature': np.array(feature_names)[indices],  # 确保这里的feature_names与你的特征顺序一致
+    'importance_mean': importances_mean[indices],
+    'importance_std': importances_std[indices]
+})
+print(feature_importances)
+
+
+#SHAP
+shap.initjs()
+explainer = shap.TreeExplainer(RF)
+X_test_sample = X_test.iloc[:500]
+shap_values = explainer.shap_values(X_test_sample)
+expected_value = explainer.expected_value
+print(f"原始 SHAP值形状: {np.array(shap_values).shape}")
+if np.array(shap_values).ndim == 3 and np.array(shap_values).shape[-1] == 2:
+    shap_values = np.moveaxis(shap_values, -1, 0)
+print(f"调整后的 SHAP值形状: {np.array(shap_values).shape}")
+feature_names = X_test_sample.columns.tolist()
+sample_idx = np.argmax(RF.predict_proba(X_test)[:, 1])
+sample_idx = min(sample_idx, 499)
+
+# SHAP决策图
+shap.decision_plot(
+    base_value=expected_value[1],  # 使用类别1的基准值
+    shap_values=shap_values[1],  # 类别1的指定样本的SHAP值
+    features=X_test_sample,  # 使用指定样本的特征
+    feature_names=feature_names,
+    alpha=0.3,
+    show=False
+)
+fig = plt.gcf()
+fig.set_size_inches(10, 6)        # 调整图像尺寸（宽 x 高）
+fig.subplots_adjust(left=0.3)     # 加大左边距，避免截断特征名称
+plt.savefig(r'C:\Users\22363\Desktop\PythonFigure\SHAP决策图.png',
+            dpi=300, bbox_inches='tight')
+plt.show()
+
+# SHAP摘要图
+shap.summary_plot(
+    shap_values[1],         # 类别1的SHAP值
+    X_test_sample,          # 特征数据
+    feature_names=feature_names,
+    plot_type="dot",        # 默认是"dot"，你也可以尝试"bar"
+    show=False
+)
+plt.gcf().set_size_inches(10, 6)
+plt.savefig(r'C:\Users\22363\Desktop\PythonFigure\SHAP_summary.png',
+            dpi=300, bbox_inches='tight', format='png')
+plt.close()
+
+# SHAP瀑布图
+probabilities = RF.predict_proba(X_test)[:, 1]  # 对每个样本，获取它属于类别 1 的概率
+sample_idx = np.argmax(probabilities)  # 返回最大概率的样本的索引
+patient = X_test.iloc[[sample_idx], :]
+shap_values_patient = explainer.shap_values(patient)
+print("单个样本原始 SHAP值形状:", np.array(shap_values_patient).shape)
+if np.array(shap_values_patient).ndim == 3 and np.array(shap_values_patient).shape[-1] == 2:
+    shap_values_patient = np.moveaxis(shap_values_patient, -1, 0)
+print("单个样本调整后 SHAP值形状:", np.array(shap_values_patient).shape)
+pos_shap_single = shap_values_patient[1][0]
+print("单个样本正类别 SHAP 值形状:", np.array(pos_shap_single).shape)
+plt.figure(figsize=(12, 8))
+shap.plots._waterfall.waterfall_legacy(
+    expected_value[1],
+    pos_shap_single,
+    patient.iloc[0],
+    show=False
+)
+fig = plt.gcf()
+fig.subplots_adjust(left=0.3)
+plt.savefig(r'C:\Users\22363\Desktop\PythonFigure\SHAP瀑布图.png',
+            dpi=300, bbox_inches='tight', format='png')
+plt.close()
+print(f"原始 SHAP值形状: {np.array(shap_values).shape}")
+if np.array(shap_values).ndim == 3 and np.array(shap_values).shape[-1] == 2:
+    shap_values = np.moveaxis(shap_values, -1, 0)
+print(f"调整后的 SHAP值形状: {np.array(shap_values).shape}")
+feature_names = X_test_sample.columns.tolist()
+sample_idx = np.argmax(RF.predict_proba(X_test)[:, 1])
+sample_idx = min(sample_idx, 499)
+
+# SHAP力图
+probabilities = RF.predict_proba(X_test)[:, 1]  # 对每个样本，获取它属于类别 1 的概率
+sample_idx = np.argmax(probabilities)  # 返回最大概率的样本的索引
+patient = X_test.iloc[[sample_idx], :]
+shap_values_patient = explainer.shap_values(patient)
+print("单个样本原始 SHAP值形状:", np.array(shap_values_patient).shape)
+if np.array(shap_values_patient).ndim == 3 and np.array(shap_values_patient).shape[-1] == 2:
+    shap_values_patient = np.moveaxis(shap_values_patient, -1, 0)
+print("单个样本调整后 SHAP值形状:", np.array(shap_values_patient).shape)
+pos_shap_single = shap_values_patient[1][0]
+print("单个样本正类别 SHAP 值形状:", np.array(pos_shap_single).shape)
+plt.figure(figsize=(12, 8))
+force_plot = shap.force_plot(
+    base_value=expected_value[1],       # 类别1的基准值
+    shap_values=pos_shap_single,              # 单个样本的 SHAP 值
+    features=patient.iloc[0],             # 将 DataFrame 转为 Series（单样本特征值）
+    feature_names=feature_names,          # 特征名称
+    matplotlib=True                       # 使用 matplotlib 模式生成静态图
+)
+plt.savefig(r'C:\Users\22363\Desktop\PythonFigure\SHAP力图.png',
+            dpi=300, bbox_inches='tight', format='png')
+plt.close()
+
+##SHAP 依赖图
+target_feature = 'SM'
+interaction_feature = None  # 或写成 'AGE' 之类
+shap.dependence_plot(
+    ind=target_feature,                  # 主特征名或索引
+    shap_values=shap_values[1],          # 类别1的SHAP值
+    features=X_test_sample,              # 特征数据
+    feature_names=feature_names,
+    interaction_index=interaction_feature,  # 可不填，自动选择最相关的特征
+    show=False
+)
+plt.gcf().set_size_inches(8, 6)
+plt.savefig(r'C:\Users\22363\Desktop\PythonFigure\SHAP依赖图SM.png',
+            dpi=300, bbox_inches='tight')
+plt.close()
+
+# 指定你想画的特征名
+target_feature = 'PR'
+interaction_feature = None  # 或写成 'AGE' 之类
+shap.dependence_plot(
+    ind=target_feature,                  # 主特征名或索引
+    shap_values=shap_values[1],          # 类别1的SHAP值
+    features=X_test_sample,              # 特征数据
+    feature_names=feature_names,
+    interaction_index=interaction_feature,  # 可不填，自动选择最相关的特征
+    show=False
+)
+plt.gcf().set_size_inches(8, 6)
+plt.savefig(r'C:\Users\22363\Desktop\PythonFigure\SHAP依赖图PR.png',
+            dpi=300, bbox_inches='tight')
+plt.close()
+
+
+###协同作用
+base_features = df[['sex', 'grade', 'age',  'address',
+        'AB', 'SM', 'PR', 'HI', 'AA', 'DD']].columns.tolist()
+print(base_features)
+# interact  计算两个特征之间的部分依赖交互效应  AB_SM
+feat_name1 = 'AB'
+nick_name1 = 'Academic behavior'
+feat_name2 = 'SM'
+nick_name2 = 'Self-management'
+inter1 = pdp.pdp_interact(
+    model=RF,
+    dataset=X_test,
+    model_features=base_features,
+    features=[feat_name1, feat_name2]
+)
+fig, axes = pdp.pdp_interact_plot(
+    pdp_interact_out=inter1,
+    feature_names=[nick_name1, nick_name2]
+)
+print(axes.keys())
+axes['pdp_inter_ax'].set_xlabel(nick_name1, fontsize=20)
+axes['pdp_inter_ax'].set_ylabel(nick_name2, fontsize=20)
+axes['pdp_inter_ax'].tick_params(axis='both', labelsize=12) 
+plt.savefig(r'C:\Users\22363\Desktop\PythonFigure\AB_SM.png',
+            dpi= 300,
+            bbox_inches='tight',
+            format="png")
+plt.show()
